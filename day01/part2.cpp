@@ -29,9 +29,8 @@ int main(void) {
         left.push_back(std::stoi(line));
         // skip the first number
         line = line.substr(line.find_first_of(' '));
-        tmp = std::stoi(line);
-        // check if number is in map
-        right[tmp]++;
+        // add number to map (if a key is not in a map, then its value will be 0)
+        right[std::stoi(line)]++;
     }
 
     sum = 0;
