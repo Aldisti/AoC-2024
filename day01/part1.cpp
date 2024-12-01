@@ -6,7 +6,7 @@
 #include <vector>
 
 int main(void) {
-    std::ifstream       file("input.txt");
+    std::ifstream       file("part1.txt");
     std::string         line;
     std::vector<int>    left, right;
     long                sum;
