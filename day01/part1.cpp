@@ -1,15 +1,15 @@
 
-#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
+
+#include "BIVector.hpp"
 
 int main(void) {
-    std::ifstream       file("part1.txt");
-    std::string         line;
-    std::vector<int>    left, right;
-    long                sum;
+    std::ifstream   file("part1.txt");
+    std::string     line;
+    BIVector<int>   left, right;
+    long            sum;
 
     if (!file.is_open()) {
         std::cout << "File not open." << std::endl;
@@ -23,23 +23,17 @@ int main(void) {
             break;
         // skip all the starting spaces
         line = line.substr(line.find_first_not_of(' '));
-        left.push_back(std::stoi(line));
+        left.insert(std::stoi(line));
         // skip the first number
         line = line.substr(line.find_first_of(' '));
-        right.push_back(std::stoi(line));
+        right.insert(std::stoi(line));
     }
-
-    std::sort(left.begin(), left.end());
-    std::sort(right.begin(), right.end());
 
     sum = 0;
     while (left.size() > 0 and right.size() > 0) {
-        sum += std::abs(left.front() - right.front());
-        left.erase(left.begin());
-        right.erase(right.begin());
+        sum += std::abs(left.pop(0) - right.pop(0));
     }
 
     std::cout << "The total distance between the two lists is " << sum << std::endl;
-
     return (0);
 }
