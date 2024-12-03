@@ -19,6 +19,7 @@ int main(void) {
         return (1);
     }
 
+    count = 0;
     while (file and !file.eof()) {
         line.clear();
         std::getline(file, line);
