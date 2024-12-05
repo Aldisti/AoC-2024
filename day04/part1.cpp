@@ -30,6 +30,8 @@ StringVector split(std::string str, std::string separators, bool removeSeparator
         strs.push_back(str.substr(j, i - j + !removeSeparator));
         j = ++i;
     }
+    if (j < i)
+        strs.push_back(str.substr(j, i - j + !removeSeparator));
     return strs;
 }
 
