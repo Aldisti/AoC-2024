@@ -5,9 +5,11 @@
 #include <string>
 #include <vector>
 
-typedef std::vector<std::string> StringVector;
+using String = std::string;
 
-std::string readFile(std::string filename) {
+using StringVector = std::vector<String>;
+
+String readFile(String filename) {
     std::ifstream       file(filename);
     std::stringstream   buffer;
 
@@ -18,12 +20,12 @@ std::string readFile(std::string filename) {
     return buffer.str();
 }
 
-StringVector split(std::string str, std::string separators, bool removeSeparator=true) {
-    std::vector<std::string>    strs;
-    size_t                      i = 0, j = 0;
+StringVector split(String str, String separators, bool removeSeparator=true) {
+    std::vector<String> strs;
+    size_t              i = 0, j = 0;
 
     while (i < str.size()) {
-        if (separators.find(str[i]) == std::string::npos) {
+        if (separators.find(str[i]) == String::npos) {
             i++;
             continue;
         }
@@ -35,31 +37,28 @@ StringVector split(std::string str, std::string separators, bool removeSeparator
     return strs;
 }
 
-std::string reverse(std::string str) {
-    return std::string(str.rbegin(), str.rend());
+String reverse(String str) {
+    return String(str.rbegin(), str.rend());
 }
 
-size_t countHorizontal(StringVector strs, std::string needle) {
-    std::string reverseNeedle = reverse(needle);
-    size_t      count, i;
+size_t countHorizontal(StringVector strs, String needle) {
+    String  reverseNeedle = reverse(needle);
+    size_t  count, i;
 
     count = 0;
-    for (const std::string row : strs) {
-        // std::cout << row << "|";
-        for (i = 0; i < row.size() - needle.size(); i++) {
+    for (const String & row : strs) {
+        for (i = 0; i < row.size() - needle.size() + 1; i++) {
             if (row.compare(i, needle.size(), needle) == 0 or row.compare(i, reverseNeedle.size(), reverseNeedle) == 0) {
-                i += needle.size() - 1;
-                // std::cout << "*";
                 count++;
+                i++;
             }
         }
-        // std::cout << std::endl;
     }
     return count;
 }
 
-size_t  countVertical(StringVector strs, std::string needle) {
-    std::string reverseNeedle = reverse(needle), tmp;
+size_t  countVertical(StringVector strs, String needle) {
+    String  reverseNeedle = reverse(needle), tmp;
     size_t  count, row, col, i;
 
     count = 0;
@@ -77,50 +76,51 @@ size_t  countVertical(StringVector strs, std::string needle) {
     return count;
 }
 
-size_t  countDiagonal(StringVector strs, std::string needle) {
-    std::string reverseNeedle = reverse(needle), tmp;
-    size_t  count, row, col, i, j;
+size_t  countDiagonal(StringVector strs, String needle) {
+    String  reverseNeedle = reverse(needle), tmp;
+    size_t  count, row, col, i;
 
     count = 0;
-    for (row; row < strs.size(); row++) {
+    for (row = 0; row < strs.size(); row++) {
         for (col = 0; col < strs[row].size(); col++) {
             if (strs[row][col] != needle.front() and strs[row][col] != needle.back())
                 continue;
             tmp = (strs[row][col] == needle.front()) ? needle : reverseNeedle;
             // check bottom left
-            i, j = 0, 0;
-            while (i < tmp.size() and j < tmp.size()
-                    and row + i < strs.size() and col - j < strs[row + i].size()
-                    and strs[row + i][col - j] == tmp[i]) {
+            i = 0;
+            while (i < tmp.size()
+                    and row + i < strs.size() and col >= i
+                    and strs[row + i][col - i] == tmp[i]) {
                 i++;
-                j++;
             }
-            count += (i == tmp.size() and j == tmp.size());
+            count += (i == tmp.size());
             // check bottom right
-            i, j = 0, 0;
-            while (i < tmp.size() and j < tmp.size()
-                    and row + i < strs.size() and col + j < strs[row + i].size()
-                    and strs[row + i][col + j] == tmp[i]) {
+            i = 0;
+            while (i < tmp.size() and row + i < strs.size()
+                    and col + i < strs[row + i].size()
+                    and strs[row + i][col + i] == tmp[i]) {
                 i++;
-                j++;
             }
-            count += (i == tmp.size() and j == tmp.size());
+            count += i == tmp.size();
         }
     }
     return count;
 }
 
-// 
+// 2567
 int main(void) {
     std::string     text = readFile("part1.txt");
-    StringVector    strs;
-    size_t          count;
+    size_t          count = 0;
 
-    strs = split(text, " \n\t");
+    StringVector strs = split(text, " \n\t");
 
-    count = countHorizontal(strs, "XMAS") + countVertical(strs, "XMAS") + countDiagonal(strs, "XMAS");
+    count = countHorizontal(strs, "XMAS");
+    // std::cout << "Horizontal " << count << std::endl;
+    count += countVertical(strs, "XMAS");
+    // std::cout << "Vertical " << count << std::endl;
+    count += countDiagonal(strs, "XMAS");
+    // std::cout << "Diagonal " << count << std::endl;
 
     std::cout << "The number of times XMAS appears is " << count << std::endl;
-
     return (0);
 }
