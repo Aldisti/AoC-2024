@@ -89,6 +89,14 @@ LongList   mapToLong(StringVector arr) {
     return LongList(nums.begin(), nums.end());
 }
 
+size_t  count(LongList list) {
+    size_t  size = 0;
+
+    for (auto it = list.begin(); it != list.end(); ++it)
+        size++;
+    return (size);
+}
+
 int numOfDigits(long num) {
     int digits = 0;
     do {
@@ -131,18 +139,10 @@ int main(void) {
     String      text = readFile("part1.txt");
     LongList    stones = mapToLong(split(text, " "));
 
-    // printList(stones);
-
-    for (size_t iterations = 35; iterations > 0; iterations--){
+    for (size_t iterations = 0; iterations < 25; iterations++){
         blink(stones);
-        // std::cout << "ite: " << 75 - iterations << std::endl;
     }
 
-    // printList(stones);
-
-    int count = 0;
-    for (auto it = stones.begin(); it != stones.end(); ++it)
-        count++;
-    std::cout << "The total number of stones is " << count << std::endl;
+    std::cout << "The total number of stones is " << count(stones) << std::endl;
     return (0);
 }
