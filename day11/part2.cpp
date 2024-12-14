@@ -7,6 +7,7 @@
 #include <forward_list>
 #include <cmath>
 #include <set>
+#include <map>
 
 using String = std::string;
 
@@ -18,6 +19,9 @@ using Set = std::set<T>;
 
 template <typename T>
 using List = std::forward_list<T>;
+
+template <typename T, typename U>
+using Map = std::map<T, U>;
 
 template <typename T>
 using Pair = std::pair<T,T>;
@@ -32,7 +36,7 @@ using IntPair = Pair<int>;
 
 
 template <typename T>
-void    printVector(Vector<T> vect) {
+void    print(Vector<T> vect) {
     std::cout << "[";
     for (size_t i = 0; i < vect.size() - 1; i++)
         std::cout << vect[i] << ", ";
@@ -40,11 +44,19 @@ void    printVector(Vector<T> vect) {
 }
 
 template <typename T>
-void    printList(List<T> mylist) {
+void    print(List<T> mylist) {
     std::cout << "[";
     for (auto it = mylist.begin(); it != mylist.end(); ++it)
         std::cout << ((it != mylist.begin()) ? " " : "") << *it;
     std::cout << "]" << std::endl;
+}
+
+template <typename T, typename U>
+void    print(const Map<T, U> &map) {
+    for (auto const &pair : map) {
+        std::cout << pair.first << ": " << pair.second << " | ";
+    }
+    std::cout << std::endl;
 }
 
 String  readFile(String filename) {
@@ -80,21 +92,22 @@ StringVector    split(String str, String separators, bool removeSeparator=true) 
     return strs;
 }
 
-LongList   mapToLong(StringVector arr) {
-    LongVector  nums;
+size_t  count(const Map<long, size_t> &map) {
+    size_t  count = 0;
 
-    for (const String & num : arr) {
-        nums.push_back(std::stol(num));
+    for (auto const &pair: map) {
+        count += pair.second;
     }
-    return LongList(nums.begin(), nums.end());
+    return count;
 }
 
-size_t  count(LongList list) {
-    size_t  size = 0;
+Map<long, size_t>   toMap(const StringVector &nums) {
+    Map<long, size_t>   stones;
 
-    for (auto it = list.begin(); it != list.end(); ++it)
-        size++;
-    return (size);
+    for (const String &num : nums) {
+        stones[std::stol(num)] += 1;
+    }
+    return stones;
 }
 
 int numOfDigits(long num) {
@@ -106,42 +119,56 @@ int numOfDigits(long num) {
     return digits;
 }
 
-void  blink(LongList & stones) {
-    long    n;
-    int     digits;
+void  blink(Map<long, size_t> &stones) {
+    Map<long, size_t>   new_stones;
+    long                key;
+    size_t              value;
+    int                 digits;
 
-    for (auto it = stones.begin(); it != stones.end(); ++it) {
-        n = *it;
-        // std::cout << "n: " << n << " -> ";
-        // printList(stones);
-        if (n == 0) {
-            *it = 1;
+    for (auto it = stones.begin(), next = it; it != stones.end();  it = next) {
+        ++next;
+        key = it->first;
+        value = it->second;
+
+        if (value <= 0) {
+            stones.erase(key);
             continue;
         }
-        digits = numOfDigits(n);
+
+        if (key == 0) {
+            new_stones[1] += value;
+            stones[key] -= value;
+            continue;
+        }
+
+        digits = numOfDigits(it->first);
         if (digits % 2 != 0) {
-            *it = n * 2024;
+            new_stones[key * 2024] += value;
+            stones[key] -= value;
             continue;
         }
 
         digits = std::pow(10, digits / 2);
-        // std::cout << "digits: " << digits << std::endl;
-        // std::cout << "1: " << *it << std::endl;
-        *it = n / digits;
-        // std::cout << "2: " << *it << std::endl;
-        it = stones.insert_after(it, n % digits);
-        // std::cout << "3: " << *it << std::endl;
+        new_stones[key / digits] += value;
+        new_stones[key % digits] += value;
+        stones[key] -= value;
+    }
+
+    for (const auto elem : new_stones) {
+        stones[elem.first] += elem.second;
     }
 }
 
-// 224529
+// example1 1 [1 2024 1 0 9 9 2021976] 7
+// example2 6 [125 17] 22 
+// part1 25 [...] 224529
+// part2 75 [...] 266820198587914
 int main(void) {
-    String      text = readFile("part1.txt");
-    LongList    stones = mapToLong(split(text, " "));
+    String          text = readFile("part1.txt");
+    Map<long, size_t>  stones = toMap(split(text, " "));
 
-    for (size_t iterations = 0; iterations < 25; iterations++){
+    for (size_t iterations = 0; iterations < 75; iterations++)
         blink(stones);
-    }
 
     std::cout << "The total number of stones is " << count(stones) << std::endl;
     return (0);
