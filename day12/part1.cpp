@@ -30,6 +30,7 @@ using IntPair = Pair<size_t>;
 using IntPairSet = Set<IntPair>;
 
 
+
 struct Garden {
     StringVector    map;
     size_t          area;
@@ -108,45 +109,35 @@ bool alreadyVisited(const size_t &row, const size_t &col, const IntPairSet &visi
     return visited.find(IntPair(row, col)) != visited.end();
 }
 
-void    calculate(Garden & g, size_t row, size_t col) {
-    IntPair coords(row, col);
-    char    cell = g.map[row][col];
+bool areValidCoords(const StringVector &map, const size_t &row, const size_t &col) {
+    return (row < map.size() and col < map[row].size());
+}
 
-    if (row > g.map.size() or col > g.map[row].size() or cell == ' '
-        or g.visited.find(coords) != g.visited.end()) {
-        return;
-    }
+void    calculate(Garden & g, size_t row, size_t col) {
+    static IntPairSet  directions({
+        IntPair(-1, 0), // up
+        IntPair(+1, 0), // down
+        IntPair(0, -1), // left
+        IntPair(0, +1)  // right
+    });
+
+    char    cell = g.map[row][col];
 
     g.visited.insert(IntPair(row, col));
     g.area++;
 
-    // up
-    if (row > 0 and g.map[row - 1][col] == cell
-        and not alreadyVisited(row - 1, col, g.visited))
-        calculate(g, row - 1, col);
-    else if (not alreadyVisited(row - 1, col, g.visited))
-        g.perimeter++;
+    for (const IntPair &dir : directions) {
+        if (alreadyVisited(row + dir.first, col + dir.second, g.visited))
+            continue;
 
-    // down
-    if (row < g.map.size() - 1 and g.map[row + 1][col] == cell
-        and not alreadyVisited(row + 1, col, g.visited))
-        calculate(g, row + 1, col);
-    else if (not alreadyVisited(row + 1, col, g.visited))
-        g.perimeter++;
+        if (not areValidCoords(g.map, row + dir.first, col + dir.second)
+                or g.map[row + dir.first][col + dir.second] != cell) {
+            g.perimeter++;
+            continue;
+        }
 
-    // left
-    if (col > 0 and g.map[row][col - 1] == cell
-        and not alreadyVisited(row, col - 1, g.visited))
-        calculate(g, row, col - 1);
-    else if (not alreadyVisited(row, col - 1, g.visited))
-        g.perimeter++;
-
-    // right
-    if (col < g.map[row].size() - 1 and g.map[row][col + 1] == cell
-        and not alreadyVisited(row, col + 1, g.visited))
-        calculate(g, row, col + 1);
-    else if (not alreadyVisited(row, col + 1, g.visited))
-        g.perimeter++;
+        calculate(g, row + dir.first, col + dir.second);
+    }
 }
 
 // example1 -> 140
