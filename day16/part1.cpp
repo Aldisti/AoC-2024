@@ -50,7 +50,9 @@ struct Point {
     }
 
     Point operator =(const Point &p) {
-        return Point(p);
+        this->x = p.x;
+        this->y = p.y;
+        return *this;
     }
 
     Point &operator +=(const Point &p) {
@@ -152,23 +154,38 @@ Point   findPoint(const StringVector &map, const char &c) {
 }
 
 void    findPaths(const StringVector &map, Point p, const Point &dir, u_int score, Vector<u_int> &paths) {
+    if (score > 100000)
+        return;
     Point next = p + dir;
     if (map[next.y][next.x] == 'E') {
         paths.push_back(score);
+        std::cout << "Reached end with " << score << " score" << std::endl;
+        u_int smallest = paths[0];
+        for (auto score : paths) {
+            if (score < smallest)
+                smallest = score;
+        }
+        std::cout << smallest << std::endl;
         return;
     }
 
-    std::cout << "Checking " << p << " -> " << (p + dir) << " " << score << std::endl;
-    if (map[next.y][next.x] == '.')
+    // std::cout << "Checking " << p << " -> " << (p + dir) << " " << score << std::endl;
+    if (map[next.y][next.x] == '.') {
+        // score.push_back(next);
         findPaths(map, next, dir, score + 1, paths);
+    }
 
-    for (auto it = dirs.begin(); it != dirs.end(); ++it) {
-        const Point &d = it->second;
-        if (dir + d == Point() or d == dir)
+    // String tmp;
+    // std::getline(std::cin, tmp);
+
+    for (const char &c : "><^v") {
+        const Point &d = dirs[c];
+        if (d == Point() or dir + d == Point() or d == dir)
             continue;
         next = p + d;
-        std::cout << "Checking " << it->first << " " << p << " -> " << (next) << " " << score << std::endl;
         if (map[next.y][next.x] == '.') {
+            // std::cout << "Checking direction: " << c << " " << d << ", p: " << p << ", next: " << next << std::endl;
+            // score.push_back(next);
             findPaths(map, next, d, score + 1000, paths);
         }
     }
@@ -185,8 +202,6 @@ int main(void) {
     findPaths(map, start, dirs['>'], 0, paths);
 
     print(paths);
-
-
 
     return (0);
 }
