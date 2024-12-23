@@ -159,7 +159,7 @@ Vector<Point> dirs({
     Point(+1, 0),
 });
 
-Vector<Point> possibleDirs(const StringVector &map, const Point &p, const Set<u_int> visited) {
+Vector<Point> possibleDirs(const StringVector &map, const Point &p, const Set<u_int> visited, const Point &end) {
     Vector<Point>   possibles;
     Point           next;
 
@@ -171,47 +171,76 @@ Vector<Point> possibleDirs(const StringVector &map, const Point &p, const Set<u_
             continue;
         possibles.push_back(next);
     }
-    std::sort(possibles.begin(), possibles.end(), [](Point a, Point b) {
-        return a.distance(Point(6, 6)) > b.distance(Point(6, 6));
+    std::sort(possibles.begin(), possibles.end(), [end](Point a, Point b) {
+        return a.distance(end) > b.distance(end);
     });
     return possibles;
 }
 
-void    findPath(StringVector &map, Point p, Set<u_int> &visited, u_int steps) {
-    Point next;
-
-    map[p.y][p.x] = '@';
-    print(map);
-    map[p.y][p.x] = '+';
+void debug(StringVector map=StringVector(), Point p=Point()) {
+    if (map.size() > 0) {
+        map[p.y][p.x] = '@';
+        print(map);
+        map[p.y][p.x] = '+';
+    }
     String text;
     std::getline(std::cin, text);
+}
 
-    if (p.y == map.size() - 1 and p.x == map[p.y].size() - 1) {
-        std::cout << "Reached end with " << steps << " steps" << std::endl;
-        return;
+template <typename T>
+Vector<T> copy_and_add(const Vector<T> &v, T value) {
+    Vector<T> copy(v.begin(), v.end());
+
+    copy.push_back(value);
+    return copy;
+}
+
+Vector<Point> findPath(const StringVector &map, Point p, Set<u_int> &visited, Vector<Point> steps, const Point end) {
+    Point next;
+
+    if (p == end) {
+        return steps;
     }
 
     visited.insert(p.to_int());
 
-    Vector<Point> possibles = possibleDirs(map, p, visited);
+    Vector<Point> possibles = possibleDirs(map, p, visited, end);
 
-    for (auto next : possibles)
-        findPath(map, next, visited, steps + 1);
+    Vector<Point> res;
+    Vector<Point> tmp;
+    for (auto next : possibles) {
+        tmp = findPath(map, next, visited, copy_and_add(steps, p), end);
+        if (res.size() == 0 or (tmp.size() > 0 and tmp.size() < res.size()))
+            res = tmp;
+    }
+    return res;
 }
 
 // 
 int main(void) {
     String          text = readFile("example.txt");
-    StringVector    map = genMap(7, 7);
+    u_int           size = 7;
+    StringVector    map = genMap(size, size);
     Vector<Point>   points = parsePoints(text);
     Set<u_int>      visited;
 
     points.resize(12);
 
     for (const Point &p : points)
-        map[p.y][p.x] = '#';
+        if (p.y < map.size() and p.x < map[p.y].size())
+            map[p.y][p.x] = '#';
 
-    findPath(map, Point(0, 0), visited, 0);
+    Vector<Point> path = findPath(map, Point(), visited, Vector<Point>(), Point(size - 1, size - 1));
 
+    for (u_int i = 1; i < path.size() - 1; i++) {
+        visited.clear();
+        Vector<Point> s_path = findPath(map, Point(), visited, Vector<Point>(), path[i]);
+        if (s_path.size() < i) {
+            path.erase(path.begin(), path.begin() + i);
+            path.insert(path.begin(), s_path.begin(), s_path.end());
+        }
+    }
+
+    std::cout << "Final path size is " << path.size() << std::endl;
     return (0);
 }
