@@ -104,21 +104,26 @@ StringVector    split(String str, String separators, bool check_in=true) {
     return strs;
 }
 
-UIntVector parseMatrix(const String &str) {
-    StringVector    mat = split(str, "\n");
-    UIntVector      values(5, 0);
+u_int parseMatrix(const String &str) {
+    const u_int width = 5;
+    u_int       col = 0, pins = 0;
 
-    for (u_int r = 1; r < mat.size() - 1; r++)
-        for (u_int c = 0; c < mat[r].size(); c++)
-            values[c] += (mat[r][c] == '#');
-    return values;
+    for (u_int i = width; i < str.size() - width; i++) {
+        if (str[i] == '\n') {
+            col = 0;
+            continue;
+        }
+        pins += (str[i] == '#') << ((4 - col) * 4);
+        col++;
+    }
+    return pins;
 }
 
-void parseInput(const String &input, Set<UIntVector> &locks, Set<UIntVector> &keys) {
+void parseInput(const String &input, Set<u_int> &locks, Set<u_int> &keys) {
     StringVector splitted = split(input, "\n\n", false);
 
     for (const String &matrix : splitted) {
-        UIntVector parsed = parseMatrix(matrix);
+        u_int parsed = parseMatrix(matrix);
         if (matrix.compare(0, 5, "#####") == 0)
             locks.insert(parsed);
         else
@@ -126,30 +131,30 @@ void parseInput(const String &input, Set<UIntVector> &locks, Set<UIntVector> &ke
     }
 }
 
-bool doesFit(const UIntVector &lock, const UIntVector &key) {
-    if (lock.size() != key.size()) {
-        std::cout << "Lock and key sizes don't match" << std::endl;
-        return false;
-    }
-    for (u_int i = 0; i < lock.size(); i++)
-        if (lock[i] + key[i] >= 6)
+bool doesFit(const u_int &lock, const u_int &key) {
+    u_int sum = lock + key;
+
+    while (sum > 0) {
+        if ((sum & 0x0F) > 5)
             return false;
+        sum >>= 4;
+    }
     return true;
 }
 
-u_int countFittingKeys(const Set<UIntVector> &locks, const Set<UIntVector> &keys) {
+u_int countFittingKeys(const Set<u_int> &locks, const Set<u_int> &keys) {
     u_int   fitting = 0;
 
-    for (const UIntVector &key : keys)
-        for (const UIntVector &lock : locks)
+    for (const u_int &key : keys)
+        for (const u_int &lock : locks)
             fitting += doesFit(lock, key);
     return fitting;
 }
 
 // 3136
 int main(void) {
-    String              text = readFile("input.txt");
-    Set<UIntVector>      locks, keys;
+    String      text = readFile("input.txt");
+    Set<u_int>  locks, keys;
 
     parseInput(text, locks, keys);
 
