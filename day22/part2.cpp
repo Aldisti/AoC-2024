@@ -54,24 +54,9 @@ struct Sequence {
         return *this;
     }
 
-    u_int get_last() const {
-        return last;
-    }
+    u_int get_last() const { return last; }
 
-    bool is_full() const {
-        return last == SIZE;
-    }
-
-    bool is_unique() const {
-        // int zeros = 0;
-        // for (u_int i = 0; i < SIZE; i++)
-        //     zeros += (sequence[i] == 0);
-        // return zeros != SIZE;
-        for (u_int i = 1; i < SIZE; i++)
-            if (sequence[i] == sequence[i - 1])
-                return false;
-        return true;
-    }
+    bool is_full() const { return last == SIZE; }
 
     int operator [](const u_int &index) const {
         if (index >= SIZE)
@@ -185,14 +170,6 @@ Vector<u_long> parseInput(const String &str) {
     return secrets;
 }
 
-u_long ft_mix(const u_long &secret, const u_long &value) {
-    return value ^ secret;
-}
-
-u_long ft_prune(const u_long &secret) {
-    return secret % 16777216;
-}
-
 u_long next_secret(const u_long &secret) {
     u_long new_secret = secret;
 
@@ -203,38 +180,34 @@ u_long next_secret(const u_long &secret) {
     return new_secret;
 }
 
-// 
+// 2277
 int main(void) {
-    String      text = readFile("input.txt");
-    Vector<u_long>  secrets = parseInput(text);
-    Map<Sequence, u_int> sequences({});
+    String                  text = readFile("input.txt");
+    Vector<u_long>          secrets = parseInput(text);
+    Map<Sequence, u_int>    sequences;
 
     u_long  prev_sec;
     int     diff = 0;
     for (u_long &secret : secrets) {
-        // u_long org = secret;
         Sequence sequence;
+        Set<Sequence> found;
         for (u_int i = 0; i < 2000; i++) {
             prev_sec = secret;
             secret = next_secret(secret);
             diff = (secret % 10) - (prev_sec % 10);
             sequence.add(diff);
-            if (not sequence.is_full())
+            if (not sequence.is_full() or found.find(sequence) != found.end())
                 continue;
-            if (sequence.is_unique())
-                sequences[sequence] += secret % 10;
+            sequences[sequence] += secret % 10;
+            found.insert(sequence);
         }
     }
 
+    u_int greatest = 0;
+    for (auto pair : sequences)
+        if (pair.second > greatest)
+            greatest = pair.second;
 
-
-    Sequence greaters;
-    for (auto it = sequences.begin(); it != sequences.end(); ++it)
-        if ((int) it->second > greaters[Sequence::SIZE - 1])
-            greaters.add(it->second);
-
-
-
-    std::cout << greaters << std::endl;
+    std::cout << "The most bananas you can get is " << greatest << std::endl;
     return (0);
 }
