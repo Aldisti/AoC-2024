@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <queue>
 #include <set>
 #include <map>
 
@@ -23,6 +24,9 @@ using Map = std::map<T, U>;
 template <typename T>
 using Pair = std::pair<T,T>;
 
+template <typename T>
+using Queue = std::queue<T>;
+
 using StringVector = Vector<String>;
 using LongVector = Vector<long>;
 using CharVector = Vector<char>;
@@ -33,18 +37,17 @@ using IntPair = Pair<int>;
 struct Point {
     u_int   x;
     u_int   y;
+    u_int   d;
 
-    Point(): x(0), y(0) { }
-    Point(const u_int &x, const u_int &y): x(x), y(y) { }
-    Point(const Point &p): x(p.x), y(p.y) { }
-
-    Point operator +(const Point &p) const {
-        return Point(this->x + p.x, this->y + p.y);
-    }
+    Point(): x(0), y(0), d(0) { }
+    Point(const u_int &x, const u_int &y): x(x), y(y), d(0) { }
+    Point(const u_int &x, const u_int &y, const u_int &d): x(x), y(y), d(d) { }
+    Point(const Point &p): x(p.x), y(p.y), d(p.d) { }
 
     Point &operator =(const Point &p) {
         this->x = p.x;
         this->y = p.y;
+        this->d = p.d;
         return *this;
     }
 
@@ -54,17 +57,15 @@ struct Point {
         return *this;
     }
 
-    bool operator ==(const Point &p) const {
-        return this->x == p.x and this->y == p.y;
-    }
+    Point operator +(const Point &p) const { return Point(this->x + p.x, this->y + p.y); }
 
-    bool operator !=(const Point &p) const {
-        return this->x != p.x or this->y != p.y;
-    }
+    bool operator <(const Point &p) const { return x < p.x and y < p.y; }
 
-    u_int to_int() const {
-        return x * 1000 + y;
-    }
+    bool operator ==(const Point &p) const { return x == p.x and y == p.y; }
+
+    bool operator !=(const Point &p) const { return x != p.x or y != p.y; }
+
+    u_int to_int() const { return x * 1000 + y; }
 
     float distance(const Point &p) {
         return std::sqrt(std::pow(x + p.x, 2) + std::pow(y + p.y, 2));
@@ -72,8 +73,7 @@ struct Point {
 };
 
 std::ostream &operator <<(std::ostream &out, const Point &p) {
-    out << "(" << p.x << ", " << p.y << ")";
-    return out;
+    return out << "(" << p.x << ", " << p.y << ", " << p.d << ")";
 }
 
 
@@ -94,6 +94,16 @@ void    print(Vector<T> vect) {
 void    print(StringVector strs) {
     for (const String &line : strs)
         std::cout << line << std::endl;
+}
+
+template <typename T>
+void    print(const Set<T> &set) {
+    std::cout << "[" << *(set.begin());
+    for (auto it = set.begin(); it != set.end();) {
+        ++it;
+        std::cout << ", " << *it;
+    }
+    std::cout << "]" << std::endl;
 }
 
 template <typename T, typename U>
@@ -159,88 +169,50 @@ Vector<Point> dirs({
     Point(+1, 0),
 });
 
-Vector<Point> possibleDirs(const StringVector &map, const Point &p, const Set<u_int> visited, const Point &end) {
-    Vector<Point>   possibles;
-    Point           next;
-
-    for (auto dir : dirs) {
-        next = p + dir;
-        if (next.y >= map.size() or next.x >= map[next.y].size())
-            continue;
-        if (map[next.y][next.x] == '#' or visited.find(next.to_int()) != visited.end())
-            continue;
-        possibles.push_back(next);
-    }
-    std::sort(possibles.begin(), possibles.end(), [end](Point a, Point b) {
-        return a.distance(end) > b.distance(end);
-    });
-    return possibles;
-}
-
-void debug(StringVector map=StringVector(), Point p=Point()) {
-    if (map.size() > 0) {
-        map[p.y][p.x] = '@';
-        print(map);
-        map[p.y][p.x] = '+';
-    }
-    String text;
-    std::getline(std::cin, text);
-}
-
-template <typename T>
-Vector<T> copy_and_add(const Vector<T> &v, T value) {
-    Vector<T> copy(v.begin(), v.end());
-
-    copy.push_back(value);
-    return copy;
-}
-
-Vector<Point> findPath(const StringVector &map, Point p, Set<u_int> &visited, Vector<Point> steps, const Point end) {
-    Point next;
-
-    if (p == end) {
-        return steps;
-    }
-
+u_int findPath(const StringVector &map, Set<u_int> &visited) {
+    Point p, next;
+    Queue<Point> queue;
+    queue.push(p);
     visited.insert(p.to_int());
-
-    Vector<Point> possibles = possibleDirs(map, p, visited, end);
-
-    Vector<Point> res;
-    Vector<Point> tmp;
-    for (auto next : possibles) {
-        tmp = findPath(map, next, visited, copy_and_add(steps, p), end);
-        if (res.size() == 0 or (tmp.size() > 0 and tmp.size() < res.size()))
-            res = tmp;
+    while (not queue.empty()) {
+        p = queue.front();
+        queue.pop();
+ 
+        if (p == Point(map.size() - 1, map[0].size() - 1))
+            return p.d;
+ 
+        for (const Point &dir : dirs) {
+            Point next = p + dir;
+            if (next.y >= map.size() or next.x >= map[next.y].size()
+                    or visited.find(next.to_int()) != visited.end())
+                continue;
+            next.d = p.d + 1;
+            queue.push(next);
+            visited.insert(next.to_int());
+        }
     }
-    return res;
+    return 0;
 }
 
-// 
+// 338
 int main(void) {
-    String          text = readFile("example.txt");
-    u_int           size = 7;
+    String          text = readFile("input.txt");
+    u_int           size = 71;
     StringVector    map = genMap(size, size);
     Vector<Point>   points = parsePoints(text);
     Set<u_int>      visited;
 
-    points.resize(12);
+    points.resize(1024);
 
-    for (const Point &p : points)
-        if (p.y < map.size() and p.x < map[p.y].size())
-            map[p.y][p.x] = '#';
-
-    Vector<Point> path = findPath(map, Point(), visited, Vector<Point>(), Point(size - 1, size - 1));
-
-    for (u_int i = 1; i < path.size() - 1; i++) {
-        visited.clear();
-        Vector<Point> s_path = findPath(map, Point(), visited, Vector<Point>(), path[i]);
-        if (s_path.size() < i) {
-            path.erase(path.begin(), path.begin() + i);
-            path.insert(path.begin(), s_path.begin(), s_path.end());
-        }
+    for (const Point &p : points) {
+        if (p.y >= map.size() or p.x >= map[p.y].size())
+            continue;
+        visited.insert(p.to_int());
+        map[p.y][p.x] = '#';
     }
 
-    std::cout << "Final path size is " << path.size() << std::endl;
+    u_int steps = findPath(map, visited);
+
+    std::cout << "The minimum number of steps is " << steps << std::endl;
     return (0);
 }
