@@ -132,19 +132,20 @@ Map<String, Set<String>> parseConnections(const String &str) {
     return connections;
 }
 
-Set<Set<String>> get_combinations(Set<String> s, u_int min_size=2) {
-    Set<Set<String>> combs;
+template <typename T>
+Set<Set<T>> get_combinations(Set<T> s, u_int comb_size) {
+    Set<Set<T>> combs;
+    T tmp;
 
-    if (s.size() < min_size)
+    if (s.size() == comb_size)
+        combs.insert(s);
+    if (s.size() <= comb_size)
         return combs;
 
-    combs.insert(s);
-
-    String tmp;
     for (auto it = s.begin(); it != s.end(); it++) {
         tmp = *it;
         it = s.erase(it);
-        Set<Set<String>> other_combs = get_combinations(s, min_size);
+        Set<Set<T>> other_combs = get_combinations(s, comb_size);
         combs.insert(other_combs.begin(), other_combs.end());
         it = s.insert(it, tmp);
     }
@@ -175,9 +176,13 @@ int main(void) {
                 if (not is_clique(nodes, comb))
                     continue;
                 comb.insert(node);
-                if (comb.size() > clique.size())
+                if (comb.size() > clique.size()){
                     clique = comb;
+                    break;
+                }
             }
+            if (not clique.empty())
+                break;
         }
         if (not clique.empty())
             break;
