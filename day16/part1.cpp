@@ -4,7 +4,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <forward_list>
 #include <cmath>
 #include <set>
 #include <map>
@@ -17,9 +16,6 @@ using Vector = std::vector<T>;
 template <typename T>
 using Set = std::set<T>;
 
-template <typename T>
-using List = std::forward_list<T>;
-
 template <typename T, typename U>
 using Map = std::map<T, U>;
 
@@ -31,7 +27,6 @@ using PairVector = Vector<Pair<T>>;
 
 using StringVector = Vector<String>;
 using LongVector = Vector<long>;
-using LongList = List<long>;
 using CharVector = Vector<char>;
 using IntPair = Pair<int>;
 
@@ -40,40 +35,43 @@ using IntPair = Pair<int>;
 struct Point {
     u_int   x;
     u_int   y;
+    u_int   d;
 
-    Point(): x(0), y(0) { }
-    Point(const u_int &x, const u_int &y): x(x), y(y) { }
-    Point(const Point &p): x(p.x), y(p.y) { }
+    Point(): x(0), y(0), d(0) { }
+    Point(u_int point): x(point >> 16), y(point & 0xFF), d(0) { }
+    Point(const u_int &x, const u_int &y): x(x), y(y), d(0) { }
+    Point(const u_int &x, const u_int &y, const u_int &d): x(x), y(y), d(d) { }
+    Point(const Point &p): x(p.x), y(p.y), d(p.d) { }
 
-    Point operator +(const Point &p) const {
-        return Point(this->x + p.x, this->y + p.y);
-    }
-
-    Point operator =(const Point &p) {
-        this->x = p.x;
-        this->y = p.y;
+    Point &operator =(const Point &p) {
+        x = p.x;
+        y = p.y;
+        d = p.d;
         return *this;
     }
 
     Point &operator +=(const Point &p) {
-        this->x += p.x;
-        this->y += p.y;
+        x += p.x;
+        y += p.y;
+        d += p.d;
         return *this;
     }
 
-    bool operator ==(const Point &p) const {
-        return this->x == p.x and this->y == p.y;
-    }
+    u_int to_int() const { return (x << 16) + y; }
+    u_long to_long() const { return (((u_long) d) << 32) + to_int(); }
 
-    bool operator !=(const Point &p) const {
-        return this->x != p.x or this->y != p.y;
-    }
+    Point operator +(const Point &p) { return Point(x + p.x, y + p.y, d + p.d); }
+    Point operator -(const Point &p) { return Point(x - p.x, y - p.y, d - p.d); }
+
+    bool operator ==(const Point &p) const { return x == p.x and y == p.y; }
+    bool operator !=(const Point &p) const { return x != p.x or y != p.y; }
+    bool operator <(const Point &p) const { return to_long() < p.to_long(); }
 };
 
 std::ostream &operator <<(std::ostream &out, Point const &p) {
-    out << "(" << p.x << ", " << p.y << ")";
-    return out;
+    return out << "(" << p.x << ", " << p.y << ", " << p.d << ")";
 }
+
 
 
 template <typename T>
@@ -87,14 +85,6 @@ void    print(Vector<T> vect) {
 void    print(StringVector strs) {
     for (const String &line : strs)
         std::cout << line << std::endl;
-}
-
-template <typename T>
-void    print(List<T> mylist) {
-    std::cout << "[";
-    for (auto it = mylist.begin(); it != mylist.end(); ++it)
-        std::cout << ((it != mylist.begin()) ? " " : "") << *it;
-    std::cout << "]" << std::endl;
 }
 
 template <typename T, typename U>
@@ -138,14 +128,63 @@ StringVector    split(String str, String separators, bool removeSeparator=true) 
     return strs;
 }
 
-Map<char, Point>    dirs({
-    {'^', Point(0, -1)}, // up
-    {'v', Point(0, +1)}, // down
-    {'<', Point(-1, 0)}, // left
-    {'>', Point(+1, 0)}  // right
+void printColoredMap(const StringVector &map, const char wall='#', const char player='@', const char visited='O') {
+    for (const String &row : map) {
+        for (const char &c : row) {
+            if (c == wall)
+                std::cout << "\033[1;31m";
+            else if (c == visited)
+                std::cout << "\033[1;32m";
+            else if (c == player)
+                std::cout << "\033[1;34m";
+            std::cout << c << "\033[0m";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void debug(StringVector map, const Point &p=Point()) {
+    map[p.y][p.x] = '@';
+    printColoredMap(map);
+    String __;
+    std::getline(std::cin, __);
+}
+
+void printPath(StringVector map, const Vector<Point> &path, bool stop=false) {
+    for (auto p : path) {
+        map[p.y][p.x] = '@';
+        if (stop)
+            printColoredMap(map);
+        map[p.y][p.x] = 'O';
+        if (stop) {
+            String __;
+            std::getline(std::cin, __);
+        }
+    }
+    printColoredMap(map);
+    if (stop) {
+        String __; std::getline(std::cin, __);
+    }
+}
+
+Vector<Vector<bool>> map_walls(const StringVector &map, char wall) {
+    Vector<Vector<bool>> walls(map.size(), Vector<bool>(map.front().size(), false));
+
+    for (u_int y = 0; y < map.size(); y++)
+        for (u_int x = 0; x < map[y].size(); x++)
+            if (map[y][x] == wall)
+                walls[y][x] = true;
+    return walls;
+}
+
+Map<char, Point> dirs({
+    {'^', Point(0, -1, 1)}, // up
+    {'v', Point(0, +1, 1)}, // down
+    {'<', Point(-1, 0, 1)}, // left
+    {'>', Point(+1, 0, 1)}  // right
 });
 
-Point   findPoint(const StringVector &map, const char &c) {
+Point   find_point(const StringVector &map, const char &c) {
     for (u_int y = 0; y < map.size(); y++)
         for (u_int x = 0; x < map[y].size(); x++)
             if (map[y][x] == c)
@@ -153,55 +192,54 @@ Point   findPoint(const StringVector &map, const char &c) {
     return Point();
 }
 
-void    findPaths(const StringVector &map, Point p, const Point &dir, u_int score, Vector<u_int> &paths) {
-    if (score > 100000)
-        return;
-    Point next = p + dir;
-    if (map[next.y][next.x] == 'E') {
-        paths.push_back(score);
-        std::cout << "Reached end with " << score << " score" << std::endl;
-        u_int smallest = paths[0];
-        for (auto score : paths) {
-            if (score < smallest)
-                smallest = score;
+Vector<Point> find_path(const StringVector &map, Vector<Vector<bool>> visited, const Point &start, const Point &end) {
+    Map<u_int, Point>   parents;
+    Set<Pair<Point>>    queue;
+
+    queue.insert(Pair<Point>(start, dirs['>']));
+    visited[start.y][start.x] = true;
+
+    while (not queue.empty()) {
+        auto [p, prev_dir] = *queue.begin();
+        queue.erase(queue.begin());
+
+        if (p == end) {
+            Vector<Point> path({p});
+            Point tmp = p;
+            while (tmp != start) {
+                tmp = parents[tmp.to_int()];
+                path.push_back(tmp);
+            }
+            return path;
         }
-        std::cout << smallest << std::endl;
-        return;
-    }
 
-    // std::cout << "Checking " << p << " -> " << (p + dir) << " " << score << std::endl;
-    if (map[next.y][next.x] == '.') {
-        // score.push_back(next);
-        findPaths(map, next, dir, score + 1, paths);
-    }
-
-    // String tmp;
-    // std::getline(std::cin, tmp);
-
-    for (const char &c : "><^v") {
-        const Point &d = dirs[c];
-        if (d == Point() or dir + d == Point() or d == dir)
-            continue;
-        next = p + d;
-        if (map[next.y][next.x] == '.') {
-            // std::cout << "Checking direction: " << c << " " << d << ", p: " << p << ", next: " << next << std::endl;
-            // score.push_back(next);
-            findPaths(map, next, d, score + 1000, paths);
+        for (auto [d, dir] : dirs) {
+            Point next = p + dir;
+            if (next.y >= map.size() or next.x >= map[next.y].size()
+                    or visited[next.y][next.x])
+                continue;
+            if (prev_dir.y != dir.y or prev_dir.x != dir.x)
+                next.d += 1000;
+            queue.insert(Pair<Point>(next, dir));
+            parents[next.to_int()] = p;
+            visited[next.y][next.x] = true;
         }
     }
+    return Vector<Point>();
 }
 
+// too high 89472
+int main(int ac, char *av[]) {
+    String                  text = readFile((ac != 2) ? "input.txt" : av[1]);
+    StringVector            map = split(text, "\n");
+    Vector<Vector<bool>>    walls = map_walls(map, '#');
+    Point   start = find_point(map, 'S'), end = find_point(map, 'E');
 
-// 
-int main(void) {
-    String          text = readFile("example1.txt");
-    StringVector    map = split(text, "\n");
-    Vector<u_int>   paths;
-    Point           start = findPoint(map, 'S');
+    Vector<Point> path = find_path(map, walls, start, end);
 
-    findPaths(map, start, dirs['>'], 0, paths);
+    printPath(map, path);
 
-    print(paths);
+    std::cout << path.front() << std::endl;
 
     return (0);
 }
